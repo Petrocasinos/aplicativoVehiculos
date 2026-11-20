@@ -73,14 +73,6 @@ export function Shell({ profile, children }: { profile: Profile; children: React
           ))}
         </nav>
         <div className="mt-auto pt-8">
-          <div className="mb-5 rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs text-sky-300">
-              <ShieldCheck size={16} /> Demostración
-            </div>
-            <p className="mb-0 text-xs leading-5 text-slate-400">
-              Datos ficticios. Validación PESV pendiente para operación real.
-            </p>
-          </div>
           <form action={logout}>
             <button className="nav-link w-full">
               <LogOut size={18} />

@@ -48,11 +48,6 @@ export default function LoginPage() {
             Ingresa con tu usuario y contraseña para continuar.
           </p>
           <AuthForm configured={configured()} />
-          <p className="mt-10 rounded-lg bg-amber-50 p-3 text-center text-xs leading-5 text-amber-800">
-            Entorno de demostración · Solo datos ficticios.
-            <br />
-            Catálogo pendiente de validación PESV.
-          </p>
         </div>
       </section>
     </main>

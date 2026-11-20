@@ -2,6 +2,7 @@
 # Respaldo diario: volcado de la BD y copia de los archivos de Storage. Conserva 14 días.
 # Uso (cron, desde la carpeta del entorno): ./deploy/backup.sh /srv/backups/vehiculos
 set -euo pipefail
+umask 077 # los respaldos incluyen hashes de contraseñas: solo legibles por el dueño
 cd "$(dirname "$0")/.."
 dest="${1:?Indica la carpeta destino}"
 project=$(grep '^COMPOSE_PROJECT_NAME=' .env | cut -d= -f2)

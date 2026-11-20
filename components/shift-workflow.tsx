@@ -98,9 +98,6 @@ export function ShiftWorkflow({ data, draft = {} }: { data: Snapshot; draft?: Wo
             Selecciona el vehículo, responde tu autoevaluación y registra la inspección de
             recepción. Tu turno estará activo cuando confirmemos toda la información.
           </p>
-          <p className="info-box text-left">
-            Demostración con datos ficticios. El catálogo aún requiere validación PESV.
-          </p>
           {error && (
             <p className="error-box" role="alert">
               {error}
