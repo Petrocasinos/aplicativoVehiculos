@@ -1,0 +1,126 @@
+# Despliegue en VPS (producción o QA). Todo se configura en .env (ver deploy/README.md).
+# Puertos publicados solo en 127.0.0.1: FRONT_PORT (app) y BACK_PORT (gateway Supabase).
+# La BD no se publica.
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  db:
+    <<: *restart
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      AUTHENTICATOR_PASSWORD: ${AUTHENTICATOR_PASSWORD:?}
+      AUTH_ADMIN_PASSWORD: ${AUTH_ADMIN_PASSWORD:?}
+      STORAGE_ADMIN_PASSWORD: ${STORAGE_ADMIN_PASSWORD:?}
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./scripts/local/init.sql:/init/init.sql:ro
+      - ./deploy/db/00-init.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  auth:
+    <<: *restart
+    image: supabase/gotrue:v2.186.0
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${PUBLIC_URL:?}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${AUTH_ADMIN_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: ${PUBLIC_URL}
+      GOTRUE_URI_ALLOW_LIST: ${PUBLIC_URL}
+      GOTRUE_DISABLE_SIGNUP: "true"
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:?}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_PASSWORD_MIN_LENGTH: 12
+
+  rest:
+    <<: *restart
+    image: postgrest/postgrest:v14.3
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${AUTHENTICATOR_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_EXTRA_SEARCH_PATH: public,extensions
+      PGRST_DB_MAX_ROWS: 1000
+
+  storage:
+    <<: *restart
+    image: supabase/storage-api:v1.35.3
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      ANON_KEY: ${ANON_KEY:?}
+      SERVICE_KEY: ${SERVICE_KEY:?}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      AUTH_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${STORAGE_ADMIN_PASSWORD}@db:5432/postgres
+      FILE_SIZE_LIMIT: 8388608
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: vehiculos
+      REGION: local
+      GLOBAL_S3_BUCKET: vehiculos
+      ENABLE_IMAGE_TRANSFORMATION: "false"
+    volumes:
+      - storage:/var/lib/storage
+
+  gateway:
+    <<: *restart
+    image: caddy:2.10-alpine
+    depends_on: [auth, rest, storage]
+    ports:
+      - 127.0.0.1:${BACK_PORT:?}:8000
+    volumes:
+      - ./deploy/gateway/Caddyfile:/etc/caddy/Caddyfile:ro
+
+  app:
+    <<: *restart
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${PUBLIC_URL}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${ANON_KEY}
+    depends_on: [gateway]
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${PUBLIC_URL}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${ANON_KEY}
+      SUPABASE_SECRET_KEY: ${SERVICE_KEY}
+      AUTH_RATE_LIMIT_SECRET: ${AUTH_RATE_LIMIT_SECRET:?}
+    ports:
+      - 127.0.0.1:${FRONT_PORT:?}:3000
+
+  # Herramientas de una sola ejecución (crear el administrador inicial, scripts del repo).
+  # Uso: docker compose run --rm tools node scripts/bootstrap.mjs
+  tools:
+    profiles: ["tools"]
+    build:
+      context: .
+      target: build
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${PUBLIC_URL}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${ANON_KEY}
+    depends_on: [gateway]
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: http://gateway:8000
+      SUPABASE_SECRET_KEY: ${SERVICE_KEY}
+
+volumes:
+  db:
+  storage:
