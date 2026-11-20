@@ -60,7 +60,6 @@ export function Dashboard({ data }: { data: Snapshot }) {
               : 'Consulta tus vehículos, turnos y novedades en un solo lugar.'}
           </p>
         </div>
-        <span className="badge badge-warning">Demostración · Datos ficticios</span>
       </div>
       {driver ? (
         <section className="hero-surface mb-6 flex items-center justify-between gap-5 p-7">
@@ -395,7 +394,7 @@ export function Dashboard({ data }: { data: Snapshot }) {
       </section>
       <p className="mt-5 text-xs leading-5 text-slate-400">
         La utilización y las restricciones muestran la situación actual; los turnos e incidencias
-        respetan el período seleccionado. Catálogo de demostración pendiente de validación PESV.
+        respetan el período seleccionado.
       </p>
     </>
   );

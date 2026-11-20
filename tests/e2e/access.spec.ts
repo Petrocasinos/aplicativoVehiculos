@@ -12,9 +12,7 @@ test('login accesible, contraseña oculta/visible y diseño sin desborde', async
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
-  await expect(
-    page.getByText('Demostración · Solo datos ficticios.', { exact: false }),
-  ).toBeVisible();
+  await expect(page.getByText('datos ficticios', { exact: false })).toHaveCount(0);
 });
 test('rutas privadas exigen sesión', async ({ page }) => {
   await page.goto('/turno');
