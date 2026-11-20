@@ -1,0 +1,20 @@
+# Gateway interno: expone Auth, PostgREST y Storage bajo un solo puerto (el "back").
+{
+	admin off
+	auto_https off
+}
+
+:8000 {
+	handle_path /auth/v1/* {
+		reverse_proxy auth:9999
+	}
+	handle_path /rest/v1/* {
+		reverse_proxy rest:3000
+	}
+	handle_path /storage/v1/* {
+		reverse_proxy storage:5000
+	}
+	handle {
+		respond 404
+	}
+}
