@@ -26,7 +26,9 @@ const now = Math.floor(Date.now() / 1000);
 const jwt = (role) => {
   const enc = (x) => Buffer.from(JSON.stringify(x)).toString('base64url');
   // Claves de servicio de larga duración (10 años), como en Supabase. Rotar = regenerar el .env.
-  const body = enc({ alg: 'HS256', typ: 'JWT' }) + '.' +
+  const body =
+    enc({ alg: 'HS256', typ: 'JWT' }) +
+    '.' +
     enc({ role, iss: 'supabase', iat: now, exp: now + 10 * 365 * 86400 });
   return body + '.' + createHmac('sha256', jwtSecret).update(body).digest('base64url');
 };
@@ -45,7 +47,13 @@ const env = {
   SERVICE_KEY: jwt('service_role'),
   AUTH_RATE_LIMIT_SECRET: hex(32),
 };
-writeFileSync(o.out, Object.entries(env).map(([k, v]) => `${k}=${v}`).join('\n') + '\n', {
-  mode: 0o600,
-});
+writeFileSync(
+  o.out,
+  Object.entries(env)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('\n') + '\n',
+  {
+    mode: 0o600,
+  },
+);
 console.log(`${o.out} creado para ${o.project} (secretos no impresos).`);
