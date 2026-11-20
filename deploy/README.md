@@ -2,10 +2,10 @@
 
 Un entorno = una carpeta con su clon del repo y su `.env` (nunca en GitHub).
 
-| Entorno    | Carpeta                  | Rama | Dominio                                    | Front | Back (gateway) |
-| ---------- | ------------------------ | ---- | ------------------------------------------ | ----- | -------------- |
-| Producción | /opt/apps/vehiculos/prod | main | https://vehiculos.portalpetrocasinos.com   | 20003 | 21003          |
-| QA         | /opt/apps/vehiculos/qa   | test | https://vehiculosqa.portalpetrocasinos.com | 23003 | 24003          |
+| Entorno    | Carpeta                  | Rama       | Dominio                                    | Front | Back (gateway) |
+| ---------- | ------------------------ | ---------- | ------------------------------------------ | ----- | -------------- |
+| Producción | /opt/apps/vehiculos/prod | production | https://vehiculos.portalpetrocasinos.com   | 20003 | 21003          |
+| QA         | /opt/apps/vehiculos/qa   | QA         | https://vehiculosqa.portalpetrocasinos.com | 23003 | 24003          |
 
 La BD (Postgres 17) no se publica. Auth, PostgREST y Storage salen por el gateway en el
 puerto "back"; Caddy del host enruta `/auth/v1`, `/rest/v1` y `/storage/v1` del dominio a ese
@@ -46,3 +46,9 @@ vehiculos.portalpetrocasinos.com {
 
 `./deploy/backup.sh /srv/backups/vehiculos` (cron diario). Restaurar BD:
 `docker compose exec -T db pg_restore -U postgres -d postgres --clean < archivo.dump`.
+
+## Flujo de ramas
+
+Rama corta (`feat/…`, `fix/…`, `chore/…`) desde `develop` → PR a `develop` (CI verde) →
+PR `develop` → `QA` → actualizar QA en el VPS → PR `QA` → `production` → actualizar producción.
+Nunca push directo a `develop`, `QA` ni `production`.
